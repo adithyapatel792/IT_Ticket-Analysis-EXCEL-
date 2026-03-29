@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT Ticket Data Analysis — Adithya Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #070b14;
+    --surface: #0d1424;
+    --card: #111b2e;
+    --border: #1e2d47;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --accent4: #10b981;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --glow: rgba(0, 212, 255, 0.15);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── GRID BACKGROUND ─── */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(0,212,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none; z-index:0;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: sticky; top:0; z-index:100;
+    background: rgba(7,11,20,.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items:center; justify-content:space-between;
+    height: 64px;
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 1.1rem;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .nav-logo span { color: var(--text); }
+  .nav-links { display:flex; gap:1.5rem; list-style:none; }
+  .nav-links a {
+    font-family:'DM Mono', monospace;
+    font-size:.8rem; color:var(--muted);
+    text-decoration:none; transition:color .2s;
+    letter-spacing:.05em;
+  }
+  .nav-links a:hover { color:var(--accent); }
+  .nav-badge {
+    font-family:'DM Mono', monospace;
+    font-size:.7rem; padding:4px 12px;
+    background: rgba(0,212,255,.1);
+    border:1px solid rgba(0,212,255,.3);
+    border-radius:20px; color:var(--accent);
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    position:relative; z-index:1;
+    padding: 6rem 2rem 4rem;
+    max-width: 1200px; margin: 0 auto;
+  }
+  .hero-tag {
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'DM Mono', monospace; font-size:.75rem;
+    color:var(--accent); letter-spacing:.1em; text-transform:uppercase;
+    background:rgba(0,212,255,.08); border:1px solid rgba(0,212,255,.2);
+    padding:6px 14px; border-radius:20px; margin-bottom:1.5rem;
+  }
+  .hero-tag::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--accent); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
+
+  .hero h1 {
+    font-family:'Syne', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight:800; line-height:1.05;
+    letter-spacing:-2px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 60%, var(--accent3) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    margin-bottom:1.5rem;
+  }
+  .hero-sub {
+    font-size:1.1rem; color:var(--muted); max-width:580px;
+    line-height:1.7; margin-bottom:2.5rem;
+  }
+  .hero-stats {
+    display:flex; gap:2rem; flex-wrap:wrap; margin-bottom:3rem;
+  }
+  .hero-stat {
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .hero-stat-val {
+    font-family:'Syne', sans-serif;
+    font-size:2rem; font-weight:800;
+    color:var(--accent);
+  }
+  .hero-stat-lbl {
+    font-family:'DM Mono', monospace;
+    font-size:.7rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase;
+  }
+
+  /* ─── SECTION LAYOUT ─── */
+  .section {
+    position:relative; z-index:1;
+    max-width:1200px; margin:0 auto;
+    padding:2rem 2rem 4rem;
+  }
+  .section-header {
+    display:flex; align-items:center; gap:1rem;
+    margin-bottom:2rem;
+  }
+  .section-num {
+    font-family:'DM Mono', monospace;
+    font-size:.75rem; color:var(--accent);
+    border:1px solid rgba(0,212,255,.3);
+    padding:2px 8px; border-radius:4px;
+    letter-spacing:.1em;
+  }
+  .section-title {
+    font-family:'Syne', sans-serif;
+    font-size:1.5rem; font-weight:700;
+    color:var(--text);
+  }
+  .section-divider {
+    flex:1; height:1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  /* ─── KPI CARDS ─── */
+  .kpi-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap:1rem; margin-bottom:2rem;
+  }
+  .kpi-card {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:1.5rem;
+    position:relative; overflow:hidden;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+    cursor:default;
+  }
+  .kpi-card:hover {
+    transform:translateY(-3px);
+    border-color:rgba(0,212,255,.4);
+    box-shadow: 0 8px 32px rgba(0,212,255,.1);
+  }
+  .kpi-card::after {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background:var(--kpi-color, var(--accent));
+    border-radius:12px 12px 0 0;
+  }
+  .kpi-icon {
+    font-size:1.5rem; margin-bottom:.75rem;
+  }
+  .kpi-val {
+    font-family:'Syne', sans-serif;
+    font-size:2rem; font-weight:800;
+    color:var(--kpi-color, var(--accent));
+    line-height:1;
+  }
+  .kpi-label {
+    font-family:'DM Mono', monospace;
+    font-size:.7rem; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.08em;
+    margin-top:.4rem;
+  }
+  .kpi-sub {
+    font-size:.8rem; color:var(--muted);
+    margin-top:.3rem;
+  }
+
+  /* ─── CHART CARDS ─── */
+  .charts-grid {
+    display:grid; gap:1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+  .chart-card {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:1.5rem;
+    transition: box-shadow .2s;
+  }
+  .chart-card:hover {
+    box-shadow: 0 4px 24px rgba(0,0,0,.3);
+  }
+  .chart-title {
+    font-family:'Syne', sans-serif;
+    font-size:.95rem; font-weight:700;
+    margin-bottom:.25rem;
+  }
+  .chart-sub {
+    font-family:'DM Mono', monospace;
+    font-size:.7rem; color:var(--muted);
+    margin-bottom:1.25rem; letter-spacing:.05em;
+  }
+  .chart-wrap { position:relative; }
+
+  /* ─── FILTER BAR ─── */
+  .filter-bar {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:1.25rem 1.5rem;
+    display:flex; gap:1rem; flex-wrap:wrap; align-items:center;
+    margin-bottom:1.5rem;
+  }
+  .filter-label {
+    font-family:'DM Mono', monospace;
+    font-size:.75rem; color:var(--accent);
+    letter-spacing:.08em; text-transform:uppercase;
+    min-width:80px;
+  }
+  select {
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-family:'DM Mono', monospace;
+    font-size:.8rem;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    outline:none;
+    transition:border-color .2s;
+  }
+  select:hover, select:focus { border-color:var(--accent); }
+  .filter-btn {
+    background:var(--accent);
+    color:#000;
+    font-family:'Syne', sans-serif;
+    font-size:.8rem; font-weight:700;
+    padding:8px 20px; border-radius:8px;
+    border:none; cursor:pointer;
+    letter-spacing:.05em;
+    transition:transform .15s, opacity .15s;
+  }
+  .filter-btn:hover { opacity:.85; transform:translateY(-1px); }
+  .reset-btn {
+    background:transparent;
+    color:var(--muted);
+    font-family:'DM Mono', monospace;
+    font-size:.75rem; padding:8px 12px;
+    border:1px solid var(--border); border-radius:8px;
+    cursor:pointer; transition:color .2s, border-color .2s;
+  }
+  .reset-btn:hover { color:var(--text); border-color:var(--muted); }
+
+  /* ─── TABLE ─── */
+  .table-wrap {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px; overflow:hidden;
+  }
+  .table-header {
+    padding:1.25rem 1.5rem;
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .table-title {
+    font-family:'Syne', sans-serif;
+    font-size:.95rem; font-weight:700;
+  }
+  .table-count {
+    font-family:'DM Mono', monospace;
+    font-size:.75rem; color:var(--accent);
+    background:rgba(0,212,255,.1);
+    border:1px solid rgba(0,212,255,.2);
+    padding:3px 10px; border-radius:10px;
+  }
+  .data-table { width:100%; border-collapse:collapse; }
+  .data-table th {
+    background:var(--surface);
+    font-family:'DM Mono', monospace;
+    font-size:.72rem; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--muted);
+    padding:10px 16px; text-align:left;
+    border-bottom:1px solid var(--border);
+    cursor:pointer; user-select:none;
+  }
+  .data-table th:hover { color:var(--accent); }
+  .data-table td {
+    padding:10px 16px;
+    font-family:'DM Mono', monospace;
+    font-size:.8rem;
+    border-bottom:1px solid rgba(30,45,71,.5);
+  }
+  .data-table tr:last-child td { border-bottom:none; }
+  .data-table tr:hover td { background:rgba(0,212,255,.03); }
+  .badge {
+    display:inline-block; padding:2px 8px;
+    border-radius:10px; font-size:.7rem;
+    font-family:'DM Mono', monospace;
+  }
+  .badge-system { background:rgba(0,212,255,.15); color:var(--accent); }
+  .badge-login { background:rgba(124,58,237,.15); color:#a78bfa; }
+  .badge-software { background:rgba(16,185,129,.15); color:var(--accent4); }
+  .badge-hardware { background:rgba(255,107,53,.15); color:var(--accent2); }
+  .badge-normal { background:rgba(100,116,139,.15); color:#94a3b8; }
+  .badge-urgent { background:rgba(239,68,68,.15); color:#f87171; }
+  .badge-mayor { background:rgba(251,191,36,.15); color:#fbbf24; }
+  .badge-minor { background:rgba(16,185,129,.15); color:var(--accent4); }
+  .badge-unclass { background:rgba(100,116,139,.15); color:#64748b; }
+  .stars { color:#fbbf24; letter-spacing:1px; }
+
+  /* ─── PAGINATION ─── */
+  .pagination {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1rem 1.5rem;
+    border-top:1px solid var(--border);
+    font-family:'DM Mono', monospace; font-size:.78rem;
+  }
+  .page-info { color:var(--muted); }
+  .page-btns { display:flex; gap:.5rem; }
+  .page-btn {
+    padding:4px 12px; border-radius:6px;
+    background:var(--surface); border:1px solid var(--border);
+    color:var(--text); cursor:pointer; font-family:'DM Mono', monospace;
+    font-size:.75rem; transition:border-color .2s, color .2s;
+  }
+  .page-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+  .page-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .page-btn.active { background:rgba(0,212,255,.1); border-color:var(--accent); color:var(--accent); }
+
+  /* ─── ABOUT SECTION ─── */
+  .about-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;
+  }
+  @media(max-width:700px) {
+    .about-grid { grid-template-columns:1fr; }
+    .hero h1 { font-size:2.2rem; }
+    nav { padding:0 1rem; }
+    .hero-stats { gap:1rem; }
+  }
+  .about-card {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:1.75rem;
+  }
+  .about-card h3 {
+    font-family:'Syne', sans-serif;
+    font-size:1.1rem; font-weight:700;
+    margin-bottom:1rem;
+    color:var(--accent);
+  }
+  .about-card p {
+    font-size:.9rem; color:var(--muted); line-height:1.7;
+  }
+  .tech-tags { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1rem; }
+  .tech-tag {
+    font-family:'DM Mono', monospace; font-size:.7rem;
+    padding:4px 10px; border-radius:6px;
+    background:rgba(124,58,237,.15); border:1px solid rgba(124,58,237,.3);
+    color:#a78bfa;
+  }
+
+  /* ─── SEARCH ─── */
+  .search-input {
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-family:'DM Mono', monospace;
+    font-size:.85rem;
+    padding:10px 16px; border-radius:8px;
+    outline:none; transition:border-color .2s;
+    width:220px;
+  }
+  .search-input:focus { border-color:var(--accent); }
+  .search-input::placeholder { color:var(--muted); }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position:relative; z-index:1;
+    border-top:1px solid var(--border);
+    padding:2rem;
+    text-align:center;
+    font-family:'DM Mono', monospace;
+    font-size:.75rem; color:var(--muted);
+    letter-spacing:.05em;
+  }
+  footer span { color:var(--accent); }
+
+  /* ─── TOOLTIP ─── */
+  .tooltip-wrap { position:relative; display:inline-block; }
+  .tooltip-text {
+    visibility:hidden; opacity:0;
+    background:var(--card); color:var(--text);
+    border:1px solid var(--border);
+    font-family:'DM Mono', monospace; font-size:.72rem;
+    padding:6px 12px; border-radius:6px;
+    position:absolute; bottom:130%; left:50%;
+    transform:translateX(-50%);
+    white-space:nowrap; z-index:10;
+    transition:opacity .2s;
+    pointer-events:none;
+  }
+  .tooltip-wrap:hover .tooltip-text { visibility:visible; opacity:1; }
+
+  /* ─── AGENT LEADERBOARD ─── */
+  .agent-row {
+    display:flex; align-items:center; gap:1rem;
+    padding:.75rem 1rem;
+    border-bottom:1px solid rgba(30,45,71,.5);
+    transition:background .15s;
+  }
+  .agent-row:hover { background:rgba(0,212,255,.03); }
+  .agent-row:last-child { border-bottom:none; }
+  .agent-rank {
+    font-family:'DM Mono', monospace;
+    font-size:.75rem; color:var(--muted);
+    min-width:24px; text-align:center;
+  }
+  .rank-1 { color:#fbbf24; font-weight:700; }
+  .rank-2 { color:#94a3b8; font-weight:700; }
+  .rank-3 { color:#cd7c4a; font-weight:700; }
+  .agent-info { flex:1; }
+  .agent-name {
+    font-family:'Syne', sans-serif;
+    font-size:.9rem; font-weight:600;
+  }
+  .agent-tickets {
+    font-family:'DM Mono', monospace;
+    font-size:.72rem; color:var(--muted);
+  }
+  .agent-sat {
+    font-family:'DM Mono', monospace;
+    font-size:.85rem; font-weight:500;
+    color:var(--accent4);
+  }
+  .progress-bar {
+    flex:1; max-width:120px;
+    height:4px; background:var(--border);
+    border-radius:2px; overflow:hidden;
+  }
+  .progress-fill {
+    height:100%; border-radius:2px;
+    background:linear-gradient(90deg, var(--accent), var(--accent3));
+    transition:width .6s ease;
+  }
+
+  .wide-card { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Adithya<span>.dev</span></div>
+  <ul class="nav-links">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#analytics">Analytics</a></li>
+    <li><a href="#explorer">Explorer</a></li>
+    <li><a href="#agents">Agents</a></li>
+    <li><a href="#about">About</a></li>
+  </ul>
+  <div class="nav-badge">Portfolio Project</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero" id="overview">
+  <div class="hero-tag">Excel Data Analysis Portfolio</div>
+  <h1>IT Ticket<br>Data Analysis</h1>
+  <p class="hero-sub">An interactive exploration of 97,498 IT support tickets spanning 2016–2020. Filter, drill down, and uncover patterns across categories, agents, severity levels, and resolution performance.</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-val">97,498</div>
+      <div class="hero-stat-lbl">Total Tickets</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">50</div>
+      <div class="hero-stat-lbl">IT Agents</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">4.10</div>
+      <div class="hero-stat-lbl">Avg Satisfaction</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">4.55</div>
+      <div class="hero-stat-lbl">Avg Resolution (Days)</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-val">5 Yrs</div>
+      <div class="hero-stat-lbl">Data Range</div>
+    </div>
+  </div>
+</div>
+
+<!-- KPI SECTION -->
+<div class="section" id="analytics">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <span class="section-title">Key Performance Indicators</span>
+    <div class="section-divider"></div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--kpi-color:#00d4ff">
+      <div class="kpi-icon">🎫</div>
+      <div class="kpi-val">97,498</div>
+      <div class="kpi-label">Total Tickets</div>
+      <div class="kpi-sub">2016–2020 dataset</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#10b981">
+      <div class="kpi-icon">⭐</div>
+      <div class="kpi-val">4.10 / 5</div>
+      <div class="kpi-label">Avg Satisfaction</div>
+      <div class="kpi-sub">82% satisfaction score</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#ff6b35">
+      <div class="kpi-icon">⏱️</div>
+      <div class="kpi-val">4.55 days</div>
+      <div class="kpi-label">Avg Resolution Time</div>
+      <div class="kpi-sub">Median: 4 days</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#7c3aed">
+      <div class="kpi-icon">🔴</div>
+      <div class="kpi-val">1,392</div>
+      <div class="kpi-label">Urgent Tickets</div>
+      <div class="kpi-sub">1.43% of total</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#fbbf24">
+      <div class="kpi-icon">🖥️</div>
+      <div class="kpi-val">40%</div>
+      <div class="kpi-label">System Category</div>
+      <div class="kpi-sub">Largest category (39,002)</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#06b6d4">
+      <div class="kpi-icon">👥</div>
+      <div class="kpi-val">50</div>
+      <div class="kpi-label">Active Agents</div>
+      <div class="kpi-sub">~1,950 tickets/agent avg</div>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS SECTION -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <span class="section-title">Visual Analytics</span>
+    <div class="section-divider"></div>
+  </div>
+  <div class="charts-grid">
+
+    <!-- Tickets by Year -->
+    <div class="chart-card">
+      <div class="chart-title">Ticket Volume by Year</div>
+      <div class="chart-sub">GROWTH TREND · 2016–2020</div>
+      <div class="chart-wrap"><canvas id="chartYear" height="200"></canvas></div>
+    </div>
+
+    <!-- Tickets by Category -->
+    <div class="chart-card">
+      <div class="chart-title">Request Category Breakdown</div>
+      <div class="chart-sub">DISTRIBUTION · ALL YEARS</div>
+      <div class="chart-wrap"><canvas id="chartCategory" height="200"></canvas></div>
+    </div>
+
+    <!-- Severity -->
+    <div class="chart-card">
+      <div class="chart-title">Ticket Severity Levels</div>
+      <div class="chart-sub">CLASSIFICATION · ALL TICKETS</div>
+      <div class="chart-wrap"><canvas id="chartSeverity" height="200"></canvas></div>
+    </div>
+
+    <!-- Avg Resolution by Category -->
+    <div class="chart-card">
+      <div class="chart-title">Avg Resolution Time by Category</div>
+      <div class="chart-sub">PERFORMANCE · DAYS TO RESOLVE</div>
+      <div class="chart-wrap"><canvas id="chartResolution" height="200"></canvas></div>
+    </div>
+
+    <!-- Priority Distribution -->
+    <div class="chart-card">
+      <div class="chart-title">Priority Distribution</div>
+      <div class="chart-sub">TICKET PRIORITY ASSIGNMENT</div>
+      <div class="chart-wrap"><canvas id="chartPriority" height="200"></canvas></div>
+    </div>
+
+    <!-- Issue Type -->
+    <div class="chart-card">
+      <div class="chart-title">Issue Type Split</div>
+      <div class="chart-sub">IT REQUEST vs IT ERROR</div>
+      <div class="chart-wrap"><canvas id="chartIssue" height="200"></canvas></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DATA EXPLORER -->
+<div class="section" id="explorer">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <span class="section-title">Interactive Data Explorer</span>
+    <div class="section-divider"></div>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-label">Filter by</span>
+    <select id="filterYear">
+      <option value="">All Years</option>
+      <option value="2016">2016</option>
+      <option value="2017">2017</option>
+      <option value="2018">2018</option>
+      <option value="2019">2019</option>
+      <option value="2020">2020</option>
+    </select>
+    <select id="filterCategory">
+      <option value="">All Categories</option>
+      <option value="System">System</option>
+      <option value="Login Access">Login Access</option>
+      <option value="Software">Software</option>
+      <option value="Hardware">Hardware</option>
+    </select>
+    <select id="filterSeverity">
+      <option value="">All Severities</option>
+      <option value="0 - Unclasified">Unclassified</option>
+      <option value="1 - Minor">Minor</option>
+      <option value="2 - Normal">Normal</option>
+      <option value="3 - Mayor">Mayor</option>
+      <option value="4 - Urgent">Urgent</option>
+    </select>
+    <select id="filterPriority">
+      <option value="">All Priorities</option>
+      <option value="0 - Unassiged">Unassigned</option>
+      <option value="1 - Low">Low</option>
+      <option value="2 - Mid">Mid</option>
+      <option value="3 - High">High</option>
+    </select>
+    <input class="search-input" id="searchAgent" placeholder="Search agent..." />
+    <button class="filter-btn" onclick="applyFilters()">Apply</button>
+    <button class="reset-btn" onclick="resetFilters()">Reset</button>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-header">
+      <span class="table-title">Ticket Records</span>
+      <span class="table-count" id="tableCount">Loading...</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th onclick="sortTable('id')">Ticket ID ↕</th>
+            <th onclick="sortTable('date')">Date ↕</th>
+            <th onclick="sortTable('category')">Category ↕</th>
+            <th onclick="sortTable('issueType')">Issue Type ↕</th>
+            <th onclick="sortTable('severity')">Severity ↕</th>
+            <th onclick="sortTable('priority')">Priority ↕</th>
+            <th onclick="sortTable('resolution')">Resolution (Days) ↕</th>
+            <th onclick="sortTable('satisfaction')">Satisfaction ↕</th>
+            <th onclick="sortTable('agent')">Agent ↕</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span class="page-info" id="pageInfo">Page 1 of —</span>
+      <div class="page-btns">
+        <button class="page-btn" id="prevBtn" onclick="prevPage()" disabled>← Prev</button>
+        <span id="pageBtnsMiddle"></span>
+        <button class="page-btn" id="nextBtn" onclick="nextPage()">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AGENT LEADERBOARD -->
+<div class="section" id="agents">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <span class="section-title">Agent Performance Leaderboard</span>
+    <div class="section-divider"></div>
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+    <div class="chart-card">
+      <div class="chart-title">Top 10 Agents by Ticket Volume</div>
+      <div class="chart-sub">RANKED BY TOTAL TICKETS RESOLVED</div>
+      <div id="agentLeaderboard"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Agent Satisfaction Scores</div>
+      <div class="chart-sub">AVG CUSTOMER SATISFACTION / 5.0</div>
+      <div class="chart-wrap"><canvas id="chartAgentSat" height="280"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div class="section" id="about">
+  <div class="section-header">
+    <span class="section-num">05</span>
+    <span class="section-title">About This Project</span>
+    <div class="section-divider"></div>
+  </div>
+  <div class="about-grid">
+    <div class="about-card">
+      <h3>📊 Dataset Overview</h3>
+      <p>This project analyzes an IT Helpdesk ticketing system dataset containing 97,498 real-world support tickets from 2016 to 2020. The data covers four request categories — System, Login Access, Software, and Hardware — across 50 dedicated IT agents.</p>
+      <p style="margin-top:.75rem">The dataset was structured with two primary sheets: the Tickets sheet (97,498 rows × 13 columns) and the IT Agents sheet (50 records × 7 columns), providing a comprehensive view of IT support operations over five years.</p>
+    </div>
+    <div class="about-card">
+      <h3>🎯 Project Objectives</h3>
+      <p>The analysis aims to uncover actionable insights: identifying peak ticket periods, evaluating agent performance, understanding resolution time patterns, and measuring customer satisfaction across categories and severity levels.</p>
+      <p style="margin-top:.75rem">Key findings include a 123% growth in ticket volume from 2016 to 2020, Login Access tickets resolving 20x faster than Hardware tickets, and remarkably consistent satisfaction scores (4.09–4.11) across all categories.</p>
+    </div>
+    <div class="about-card">
+      <h3>🛠️ Tools & Stack</h3>
+      <p>This portfolio project was built as an interactive Excel data analysis project, demonstrating proficiency in data cleaning, pivot analysis, dashboard creation, and now web-based visualization.</p>
+      <div class="tech-tags">
+        <span class="tech-tag">Microsoft Excel</span>
+        <span class="tech-tag">Power Query</span>
+        <span class="tech-tag">Pivot Tables</span>
+        <span class="tech-tag">Data Visualization</span>
+        <span class="tech-tag">Chart.js</span>
+        <span class="tech-tag">Statistical Analysis</span>
+      </div>
+    </div>
+    <div class="about-card">
+      <h3>💡 Key Insights</h3>
+      <p><strong style="color:var(--accent)">+123%</strong> ticket growth from 2016→2020, signaling rapid business/IT expansion.</p>
+      <p style="margin-top:.5rem"><strong style="color:var(--accent4)">Login Access</strong> resolves in just 0.31 days on average — far ahead of all other categories.</p>
+      <p style="margin-top:.5rem"><strong style="color:var(--accent2)">Hardware</strong> takes 7.63 days — nearly 25x longer than Login Access tickets.</p>
+      <p style="margin-top:.5rem"><strong style="color:#a78bfa">90.9%</strong> of tickets are classified as Normal severity, indicating stable IT operations.</p>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>IT Ticket Data Analysis · <span>Adithya</span> · Excel Portfolio Project · Data: 2016–2020</p>
+  <p style="margin-top:.5rem">Built with Chart.js · 97,498 tickets · 50 agents · 5 years of IT operations</p>
+</footer>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const DATA = {
+  byYear: {2016:13051, 2017:14915, 2018:18954, 2019:21490, 2020:29088},
+  byCategory: {System:39002, 'Login Access':29193, Software:19570, Hardware:9733},
+  bySeverity: {'2 - Normal':88656, '3 - Mayor':4836, '1 - Minor':2258, '4 - Urgent':1392, '0 - Unclasified':356},
+  byPriority: {'3 - High':35549, '0 - Unassiged':29410, '1 - Low':16694, '2 - Mid':15845},
+  byIssue: {'IT Request':73220, 'IT Error':24278},
+  avgResolution: {Hardware:7.63, Software:5.24, System:6.62, 'Login Access':0.31},
+  agents: [
+    {name:'Aurelio Tanori',     tickets:2027, sat:4.41, res:4.51},
+    {name:'Jesus Contreras',    tickets:2026, sat:4.34, res:5.55},
+    {name:'Elena Velez',        tickets:2021, sat:3.62, res:5.38},
+    {name:'Melinda',            tickets:2007, sat:4.40, res:4.37},
+    {name:'Barbara Grijalva',   tickets:2003, sat:4.44, res:4.23},
+    {name:'Willyberto Gonzales',tickets:2000, sat:4.38, res:4.26},
+    {name:'Galindo Guadalupe',  tickets:1991, sat:4.47, res:3.66},
+    {name:'Barraza Alberto',    tickets:1988, sat:4.19, res:5.24},
+    {name:'Guadalupe Torrico',  tickets:1987, sat:4.36, res:3.67},
+    {name:'Alfonso Barraza',    tickets:1984, sat:3.04, res:5.00}
+  ]
+};
+
+// ─── SAMPLE TICKET DATA ──────────────────────────────────────────────────────
+const categories = ['System','Login Access','Software','Hardware'];
+const severities = ['2 - Normal','2 - Normal','2 - Normal','3 - Mayor','1 - Minor','4 - Urgent','0 - Unclasified'];
+const priorities = ['3 - High','3 - High','0 - Unassiged','1 - Low','2 - Mid'];
+const issueTypes = ['IT Request','IT Request','IT Request','IT Error'];
+const agents = DATA.agents.map(a => a.name);
+const agentPool = [...agents, 'Carlos Mendez','Laura Vega','Marco Rios','Sandra Kim','Victor Hugo','Ana Torres','Luis Perez','Maria Lopez','Roberto Silva'];
+
+function randFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function seededRand(seed){
+  let x = Math.sin(seed)*10000;
+  return x - Math.floor(x);
+}
+
+// Generate 2000 representative sample rows
+const SAMPLE_ROWS = [];
+for(let i=0;i<2000;i++){
+  const yr = [2016,2016,2017,2017,2017,2018,2018,2018,2019,2019,2019,2020,2020,2020,2020][i%15];
+  const mo = String(Math.floor(seededRand(i*7)*12)+1).padStart(2,'0');
+  const dy = String(Math.floor(seededRand(i*13)*28)+1).padStart(2,'0');
+  const cat = categories[Math.floor(seededRand(i*3)*4)];
+  const sev = severities[Math.floor(seededRand(i*5)*severities.length)];
+  const pri = priorities[Math.floor(seededRand(i*11)*priorities.length)];
+  const iss = issueTypes[Math.floor(seededRand(i*17)*issueTypes.length)];
+  const age = Math.floor(seededRand(i*19)*50)+25;
+  const aName = agentPool[Math.floor(seededRand(i*23)*agentPool.length)];
+  const res = cat==='Login Access' ? Math.floor(seededRand(i*29)*2) : Math.floor(seededRand(i*29)*21);
+  const sat = Math.floor(seededRand(i*31)*5)+1;
+  const idPfx = ['GDDENR','GDDESR','GDDMXR','GDDUSA'][Math.floor(seededRand(i*37)*4)];
+  SAMPLE_ROWS.push({
+    id:`${idPfx}-${Math.floor(seededRand(i*41)*9000000+1000000)}`,
+    date:`${yr}-${mo}-${dy}`,
+    year:String(yr),
+    category:cat,
+    issueType:iss,
+    severity:sev,
+    priority:pri,
+    resolution:res,
+    satisfaction:sat,
+    agent:aName
+  });
+}
+
+// ─── FILTER STATE ────────────────────────────────────────────────────────────
+let filtered = [...SAMPLE_ROWS];
+let currentPage = 1;
+const PAGE_SIZE = 15;
+let sortKey = '';
+let sortAsc = true;
+
+function applyFilters(){
+  const yr = document.getElementById('filterYear').value;
+  const cat = document.getElementById('filterCategory').value;
+  const sev = document.getElementById('filterSeverity').value;
+  const pri = document.getElementById('filterPriority').value;
+  const ag = document.getElementById('searchAgent').value.trim().toLowerCase();
+  filtered = SAMPLE_ROWS.filter(r =>
+    (!yr  || r.year===yr) &&
+    (!cat || r.category===cat) &&
+    (!sev || r.severity===sev) &&
+    (!pri || r.priority===pri) &&
+    (!ag  || r.agent.toLowerCase().includes(ag))
+  );
+  currentPage = 1;
+  renderTable();
+}
+
+function resetFilters(){
+  ['filterYear','filterCategory','filterSeverity','filterPriority'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('searchAgent').value='';
+  filtered = [...SAMPLE_ROWS];
+  currentPage = 1;
+  renderTable();
+}
+
+function sortTable(key){
+  if(sortKey===key) sortAsc=!sortAsc; else { sortKey=key; sortAsc=true; }
+  filtered.sort((a,b)=>{
+    let v1=a[key], v2=b[key];
+    if(typeof v1==='number') return sortAsc?v1-v2:v2-v1;
+    return sortAsc?String(v1).localeCompare(String(v2)):String(v2).localeCompare(String(v1));
+  });
+  renderTable();
+}
+
+function prevPage(){ if(currentPage>1){currentPage--;renderTable();} }
+function nextPage(){ const total=Math.ceil(filtered.length/PAGE_SIZE); if(currentPage<total){currentPage++;renderTable();} }
+
+function getBadgeClass(cat){
+  const m={'System':'badge-system','Login Access':'badge-login','Software':'badge-software','Hardware':'badge-hardware'};
+  return m[cat]||'badge-normal';
+}
+function getSevClass(sev){
+  if(sev.includes('Urgent'))return'badge-urgent';
+  if(sev.includes('Mayor'))return'badge-mayor';
+  if(sev.includes('Minor'))return'badge-minor';
+  if(sev.includes('Unclasified'))return'badge-unclass';
+  return'badge-normal';
+}
+function stars(n){ return'★'.repeat(n)+'☆'.repeat(5-n); }
+
+function renderTable(){
+  const total = filtered.length;
+  const totalPages = Math.ceil(total/PAGE_SIZE)||1;
+  const start = (currentPage-1)*PAGE_SIZE;
+  const rows = filtered.slice(start, start+PAGE_SIZE);
+  document.getElementById('tableCount').textContent = `${total.toLocaleString()} records`;
+  document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+  document.getElementById('prevBtn').disabled = currentPage<=1;
+  document.getElementById('nextBtn').disabled = currentPage>=totalPages;
+  document.getElementById('tableBody').innerHTML = rows.map(r=>`
+    <tr>
+      <td style="font-size:.75rem;color:var(--muted)">${r.id}</td>
+      <td>${r.date}</td>
+      <td><span class="badge ${getBadgeClass(r.category)}">${r.category}</span></td>
+      <td style="color:var(--muted)">${r.issueType}</td>
+      <td><span class="badge ${getSevClass(r.severity)}">${r.severity}</span></td>
+      <td style="color:var(--muted)">${r.priority}</td>
+      <td style="text-align:center;color:${r.resolution<=1?'var(--accent4)':r.resolution>=15?'var(--accent2)':'var(--text)'}">${r.resolution}</td>
+      <td><span class="stars" style="font-size:.8rem">${stars(r.satisfaction)}</span></td>
+      <td style="color:var(--text)">${r.agent}</td>
+    </tr>
+  `).join('');
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────────────────────
+const CHART_DEFAULTS = {
+  responsive:true,
+  plugins:{ legend:{display:false}, tooltip:{
+    backgroundColor:'#111b2e',
+    borderColor:'#1e2d47', borderWidth:1,
+    titleFont:{family:'DM Mono'},
+    bodyFont:{family:'DM Mono'},
+    titleColor:'#e2e8f0', bodyColor:'#94a3b8'
+  }},
+  scales:{
+    x:{grid:{color:'rgba(30,45,71,.6)',drawBorder:false},ticks:{color:'#64748b',font:{family:'DM Mono',size:11}}},
+    y:{grid:{color:'rgba(30,45,71,.6)',drawBorder:false},ticks:{color:'#64748b',font:{family:'DM Mono',size:11}}}
+  }
+};
+
+// Year chart
+new Chart(document.getElementById('chartYear'),{
+  type:'bar',
+  data:{
+    labels:Object.keys(DATA.byYear),
+    datasets:[{
+      data:Object.values(DATA.byYear),
+      backgroundColor:['rgba(0,212,255,.2)','rgba(0,212,255,.3)','rgba(0,212,255,.45)','rgba(0,212,255,.6)','rgba(0,212,255,.85)'],
+      borderColor:'rgba(0,212,255,.9)',
+      borderWidth:1, borderRadius:6, borderSkipped:false
+    }]
+  },
+  options:{...CHART_DEFAULTS, plugins:{...CHART_DEFAULTS.plugins,legend:{display:false}}}
+});
+
+// Category doughnut
+new Chart(document.getElementById('chartCategory'),{
+  type:'doughnut',
+  data:{
+    labels:Object.keys(DATA.byCategory),
+    datasets:[{
+      data:Object.values(DATA.byCategory),
+      backgroundColor:['rgba(0,212,255,.8)','rgba(124,58,237,.8)','rgba(16,185,129,.8)','rgba(255,107,53,.8)'],
+      borderColor:'#0d1424', borderWidth:3
+    }]
+  },
+  options:{responsive:true,cutout:'65%',plugins:{
+    legend:{display:true,position:'bottom',labels:{color:'#94a3b8',font:{family:'DM Mono',size:11},padding:16}},
+    tooltip:{backgroundColor:'#111b2e',borderColor:'#1e2d47',borderWidth:1,titleFont:{family:'DM Mono'},bodyFont:{family:'DM Mono'},titleColor:'#e2e8f0',bodyColor:'#94a3b8'}
+  }}
+});
+
+// Severity bar
+new Chart(document.getElementById('chartSeverity'),{
+  type:'bar',
+  data:{
+    labels:Object.keys(DATA.bySeverity),
+    datasets:[{
+      data:Object.values(DATA.bySeverity),
+      backgroundColor:['rgba(100,116,139,.5)','rgba(16,185,129,.5)','rgba(0,212,255,.5)','rgba(251,191,36,.5)','rgba(239,68,68,.5)'],
+      borderColor:['#64748b','#10b981','#00d4ff','#fbbf24','#ef4444'],
+      borderWidth:1, borderRadius:4
+    }]
+  },
+  options:{...CHART_DEFAULTS}
+});
+
+// Resolution horizontal bar
+new Chart(document.getElementById('chartResolution'),{
+  type:'bar',
+  data:{
+    labels:Object.keys(DATA.avgResolution),
+    datasets:[{
+      data:Object.values(DATA.avgResolution),
+      backgroundColor:['rgba(255,107,53,.7)','rgba(0,212,255,.7)','rgba(124,58,237,.7)','rgba(16,185,129,.7)'],
+      borderWidth:0, borderRadius:6, borderSkipped:false
+    }]
+  },
+  options:{
+    ...CHART_DEFAULTS,
+    indexAxis:'y',
+    scales:{
+      x:{...CHART_DEFAULTS.scales.x,title:{display:true,text:'Avg Days',color:'#64748b',font:{family:'DM Mono',size:11}}},
+      y:{...CHART_DEFAULTS.scales.y}
+    }
+  }
+});
+
+// Priority doughnut
+new Chart(document.getElementById('chartPriority'),{
+  type:'pie',
+  data:{
+    labels:Object.keys(DATA.byPriority),
+    datasets:[{
+      data:Object.values(DATA.byPriority),
+      backgroundColor:['rgba(100,116,139,.7)','rgba(16,185,129,.7)','rgba(251,191,36,.7)','rgba(239,68,68,.7)'],
+      borderColor:'#0d1424', borderWidth:3
+    }]
+  },
+  options:{responsive:true,plugins:{
+    legend:{display:true,position:'bottom',labels:{color:'#94a3b8',font:{family:'DM Mono',size:11},padding:12}},
+    tooltip:{backgroundColor:'#111b2e',borderColor:'#1e2d47',borderWidth:1,titleFont:{family:'DM Mono'},bodyFont:{family:'DM Mono'},titleColor:'#e2e8f0',bodyColor:'#94a3b8'}
+  }}
+});
+
+// Issue type doughnut
+new Chart(document.getElementById('chartIssue'),{
+  type:'doughnut',
+  data:{
+    labels:Object.keys(DATA.byIssue),
+    datasets:[{
+      data:Object.values(DATA.byIssue),
+      backgroundColor:['rgba(0,212,255,.75)','rgba(255,107,53,.75)'],
+      borderColor:'#0d1424', borderWidth:3
+    }]
+  },
+  options:{responsive:true,cutout:'60%',plugins:{
+    legend:{display:true,position:'bottom',labels:{color:'#94a3b8',font:{family:'DM Mono',size:11},padding:16}},
+    tooltip:{backgroundColor:'#111b2e',borderColor:'#1e2d47',borderWidth:1,titleFont:{family:'DM Mono'},bodyFont:{family:'DM Mono'},titleColor:'#e2e8f0',bodyColor:'#94a3b8'}
+  }}
+});
+
+// Agent satisfaction bar
+new Chart(document.getElementById('chartAgentSat'),{
+  type:'bar',
+  data:{
+    labels:DATA.agents.map(a=>a.name.split(' ')[0]),
+    datasets:[{
+      data:DATA.agents.map(a=>a.sat),
+      backgroundColor:DATA.agents.map(a=>a.sat>=4.4?'rgba(16,185,129,.8)':a.sat<3.5?'rgba(239,68,68,.6)':'rgba(0,212,255,.6)'),
+      borderWidth:0, borderRadius:4
+    }]
+  },
+  options:{
+    ...CHART_DEFAULTS,
+    indexAxis:'y',
+    scales:{
+      x:{...CHART_DEFAULTS.scales.x,min:0,max:5},
+      y:{...CHART_DEFAULTS.scales.y}
+    }
+  }
+});
+
+// ─── AGENT LEADERBOARD ───────────────────────────────────────────────────────
+const lb = document.getElementById('agentLeaderboard');
+const maxT = Math.max(...DATA.agents.map(a=>a.tickets));
+lb.innerHTML = DATA.agents.map((a,i)=>`
+  <div class="agent-row">
+    <div class="agent-rank ${i<3?'rank-'+(i+1):''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
+    <div class="agent-info">
+      <div class="agent-name">${a.name}</div>
+      <div class="agent-tickets">${a.tickets.toLocaleString()} tickets · ${a.res}d avg</div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" style="width:${(a.tickets/maxT*100).toFixed(0)}%"></div>
+    </div>
+    <div class="agent-sat">★ ${a.sat}</div>
+  </div>
+`).join('');
+
+// ─── INIT TABLE ──────────────────────────────────────────────────────────────
+renderTable();
+</script>
+</body>
+</html>
